@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple ZIP</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+</head>
+<body>
+    <h3>The most simple example of creating ZIP files in the browser.</h3>
+    <p>Only one-byte UTF-8 (ASCII) characters are supported.</p>
+    <p>No compression is applied</p>
+
+    <a href="#" class="more">Add Entry +</a>
+    <div class="entries"></div>
+
+    <button>ZIP</button>
+
+    <template id="zip-entry">
+        <div class="entry">
+            <input type="text" placeholder="File Name">
+            <textarea cols="12" rows="5" placeholder="File Content"></textarea>
+        </div>
+    </template>
+
+    <script src="zip.js"></script>
+</body>
+</html>
