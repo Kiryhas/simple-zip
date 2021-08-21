@@ -16,13 +16,36 @@ const modDate = dosDate(new Date());
 
 const bufferOfLength = length => new DataView(new ArrayBuffer(length));
 
+// JS uses UTF-16 for strings so need to map to UTF-8 to process non-ASCII characters correctly
+const utf16ToUtf8Bytes = str => {
+  const utf8Bytes = [];
+
+  for (let i = 0; i < str.length; i++) {
+    const charCode = str.charCodeAt(i);
+    if (charCode < 128) utf8Bytes.push(charCode);
+    else if (charCode < 2048) { // 11 bits max, fits into 2 bytes
+      utf8Bytes.push(192 | (charCode >> 6));
+      utf8Bytes.push(128 | (charCode & 63));
+    }
+    else if (charCode < 55296) { // todo: handle surrogate pairs
+      utf8Bytes.push(224 | (charCode >> 12));
+      utf8Bytes.push(128 | ((charCode >> 6) & 63));
+      utf8Bytes.push(128 | (charCode & 63));
+    } else {
+      throw 'Surrogate pairs are not supported yet';
+    }
+  }
+
+  return utf8Bytes;
+};
+
 // https://commandlinefanatic.com/cgi-bin/showarticle.cgi?article=art008
 const crc32 = data => {
   const divisor = 0xEDB88320;
   let crc = 0 ^ (-1);
 
   for (let i = 0; i < data.length; i++) {
-    crc ^= data.charCodeAt(i);
+    crc ^= data[i];
     for (let k = 8; k; k--) {
       crc = crc & 1 ? (crc >>> 1) ^ divisor : crc >>> 1;
     }
@@ -45,11 +68,11 @@ const fileHeader = (fileName, fileData) => {
   fileHeader.setUint16(26, fileName.length, true);
 
   for (let i = 0; i < fileName.length; i++) {
-    fileHeader.setUint8(fileHeaderLength + i, fileName.charCodeAt(i), true);
+    fileHeader.setUint8(fileHeaderLength + i, fileName[i], true);
   };
 
   for (let i = 0; i < fileData.length; i++) {
-    fileHeader.setUint8(fileHeaderLength + fileName.length + i, fileData.charCodeAt(i), true);
+    fileHeader.setUint8(fileHeaderLength + fileName.length + i, fileData[i], true);
   };
 
   return fileHeader;
@@ -70,7 +93,7 @@ const centralDirectoryFileHeader = (fileName, fileData, offset) => {
   buffer.setUint32(42, offset, true);
 
   for (let i = 0; i < fileName.length; i++) {
-    buffer.setUint8(centralDirectoryLength + i, fileName.charCodeAt(i), true);
+    buffer.setUint8(centralDirectoryLength + i, fileName[i], true);
   };
 
   return buffer;
@@ -93,8 +116,10 @@ const zipFiles = files => {
   let offset = 0, centralDirSize = 0;
 
   for (const { name, data } of files) {
-    const header = fileHeader(name, data);
-    const centralDirHeader = centralDirectoryFileHeader(name, data, offset);
+    fileName = utf16ToUtf8Bytes(name);
+    fileData = utf16ToUtf8Bytes(data);
+    const header = fileHeader(fileName, fileData);
+    const centralDirHeader = centralDirectoryFileHeader(fileName, fileData, offset);
 
     offset += header.buffer.byteLength;
     centralDirSize += centralDirHeader.buffer.byteLength;
