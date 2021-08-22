@@ -27,12 +27,17 @@ const utf16ToUtf8Bytes = str => {
       utf8Bytes.push(192 | (charCode >> 6));
       utf8Bytes.push(128 | (charCode & 63));
     }
-    else if (charCode < 55296) { // todo: handle surrogate pairs
+    else if ((charCode < 55296) || (charCode > 57343)) {
       utf8Bytes.push(224 | (charCode >> 12));
       utf8Bytes.push(128 | ((charCode >> 6) & 63));
       utf8Bytes.push(128 | (charCode & 63));
-    } else {
-      throw 'Surrogate pairs are not supported yet';
+    } else if (i + 1 < str.length) {
+      const charCodeFromSurrogates = 0x10000 + ((charCode - 0xd800) << 10) + ((str.charCodeAt(i + 1) - 0xdc00) & 0x3ff);
+      utf8Bytes.push(240 | charCodeFromSurrogates >> 18);
+      utf8Bytes.push(128 | ((charCodeFromSurrogates >> 12) & 63));
+      utf8Bytes.push(128 | ((charCodeFromSurrogates >> 6) & 63));
+      utf8Bytes.push(128 | (charCodeFromSurrogates & 63));
+      i++;
     }
   }
 
